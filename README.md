@@ -1,6 +1,6 @@
 # File Transfer LAN
 
-Ứng dụng web đơn giản để truyền file qua mạng LAN giữa máy tính và điện thoại.
+Ứng dụng web đơn giản để truyền file qua mạng LAN giữa các thiết bị.
 
 ## Tính năng
 
