@@ -120,6 +120,58 @@
         .section {
             margin-bottom: 30px;
         }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #007AFF;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .file-progress {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .file-progress-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .file-progress-bar {
+            width: 100%;
+            height: 15px;
+            background-color: #e0e0e0;
+            border-radius: 7px;
+            overflow: hidden;
+        }
+        .file-progress-fill {
+            height: 100%;
+            background-color: #28a745;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .file-progress-status {
+            margin-top: 5px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .file-progress.success .file-progress-fill {
+            background-color: #28a745;
+        }
+        .file-progress.error .file-progress-fill {
+            background-color: #dc3545;
+        }
+        .file-progress.error .file-progress-status {
+            color: #dc3545;
+        }
     </style>
 </head>
 <body>
@@ -129,10 +181,26 @@
         <div class="section">
             <h2>📤 Tải file lên máy chủ</h2>
             <form class="upload-form" id="uploadForm">
-                <input type="file" id="file" name="file" class="file-input" required>
-                <button type="submit" class="upload-btn">Tải lên</button>
+                <input type="file" id="file" name="file" class="file-input" multiple required>
+                <div style="margin: 10px 0;">
+                    <button type="submit" class="upload-btn">Tải lên tất cả</button>
+                    <button type="button" class="refresh-btn" onclick="clearFiles()">🗑️ Xóa danh sách</button>
+                </div>
+                <div id="fileCount" style="color: #666; font-size: 0.9em; margin-top: 5px;"></div>
             </form>
             <div id="status"></div>
+            
+            <!-- Progress section -->
+            <div id="progressSection" style="display: none;">
+                <h3>Tiến trình tải lên:</h3>
+                <div id="overallProgress">
+                    <div class="progress-bar">
+                        <div id="overallProgressBar" class="progress-fill"></div>
+                    </div>
+                    <span id="overallProgressText">0%</span>
+                </div>
+                <div id="fileProgressList"></div>
+            </div>
         </div>
 
         <div class="section">
@@ -173,31 +241,94 @@
         document.getElementById('uploadForm').onsubmit = async (e) => {
             e.preventDefault();
             
-            const formData = new FormData();
             const fileInput = document.getElementById('file');
+            const files = fileInput.files;
             const statusDiv = document.getElementById('status');
+            const progressSection = document.getElementById('progressSection');
+            const fileProgressList = document.getElementById('fileProgressList');
+            const overallProgressBar = document.getElementById('overallProgressBar');
+            const overallProgressText = document.getElementById('overallProgressText');
             
-            formData.append('file', fileInput.files[0]);
-            
-            try {
-                const response = await fetch('/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-                
-                const result = await response.text();
-                statusDiv.textContent = result;
-                statusDiv.className = response.ok ? 'success' : 'error';
-                statusDiv.style.display = 'block';
-                
-                if (response.ok) {
-                    // Reload trang sau 1 giây để cập nhật danh sách file
-                    setTimeout(() => location.reload(), 1000);
-                }
-            } catch (error) {
-                statusDiv.textContent = 'Lỗi khi tải file lên';
+            if (files.length === 0) {
+                statusDiv.textContent = 'Vui lòng chọn ít nhất một file';
                 statusDiv.className = 'error';
                 statusDiv.style.display = 'block';
+                return;
+            }
+            
+            // Hiển thị progress section
+            progressSection.style.display = 'block';
+            fileProgressList.innerHTML = '';
+            
+            // Reset progress
+            overallProgressBar.style.width = '0%';
+            overallProgressText.textContent = '0%';
+            
+            let completedFiles = 0;
+            let totalFiles = files.length;
+            
+            // Tạo progress cho từng file
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileProgressDiv = document.createElement('div');
+                fileProgressDiv.className = 'file-progress';
+                fileProgressDiv.innerHTML = `
+                    <div class="file-progress-name">${file.name}</div>
+                    <div class="file-progress-bar">
+                        <div class="file-progress-fill"></div>
+                    </div>
+                    <div class="file-progress-status">Đang chuẩn bị...</div>
+                `;
+                fileProgressList.appendChild(fileProgressDiv);
+            }
+            
+            // Upload từng file
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const fileProgressDiv = fileProgressList.children[i];
+                const fileProgressFill = fileProgressDiv.querySelector('.file-progress-fill');
+                const fileProgressStatus = fileProgressDiv.querySelector('.file-progress-status');
+                
+                try {
+                    fileProgressStatus.textContent = 'Đang tải lên...';
+                    
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    const response = await fetch('/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (response.ok) {
+                        fileProgressFill.style.width = '100%';
+                        fileProgressStatus.textContent = 'Hoàn thành';
+                        fileProgressDiv.classList.add('success');
+                    } else {
+                        fileProgressFill.style.width = '100%';
+                        fileProgressStatus.textContent = 'Lỗi: ' + await response.text();
+                        fileProgressDiv.classList.add('error');
+                    }
+                } catch (error) {
+                    fileProgressFill.style.width = '100%';
+                    fileProgressStatus.textContent = 'Lỗi: ' + error.message;
+                    fileProgressDiv.classList.add('error');
+                }
+                
+                completedFiles++;
+                const progress = (completedFiles / totalFiles) * 100;
+                overallProgressBar.style.width = progress + '%';
+                overallProgressText.textContent = Math.round(progress) + '%';
+            }
+            
+            // Hiển thị kết quả tổng thể
+            if (completedFiles === totalFiles) {
+                statusDiv.textContent = `Đã hoàn thành tải lên ${completedFiles}/${totalFiles} file`;
+                statusDiv.className = 'success';
+                statusDiv.style.display = 'block';
+                
+                // Reload trang sau 2 giây để cập nhật danh sách file
+                setTimeout(() => location.reload(), 2000);
             }
         };
 
@@ -209,6 +340,33 @@
             link.click();
             document.body.removeChild(link);
         }
+
+        function clearFiles() {
+            document.getElementById('file').value = '';
+            document.getElementById('fileCount').textContent = '';
+            document.getElementById('progressSection').style.display = 'none';
+            document.getElementById('status').style.display = 'none';
+        }
+
+        function updateFileCount() {
+            const fileInput = document.getElementById('file');
+            const fileCount = document.getElementById('fileCount');
+            const files = fileInput.files;
+            
+            if (files.length > 0) {
+                let totalSize = 0;
+                for (let file of files) {
+                    totalSize += file.size;
+                }
+                const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+                fileCount.textContent = `Đã chọn ${files.length} file (${totalSizeMB} MB)`;
+            } else {
+                fileCount.textContent = '';
+            }
+        }
+
+        // Cập nhật số lượng file khi chọn file
+        document.getElementById('file').addEventListener('change', updateFileCount);
 
         async function loadSharedFiles() {
             try {

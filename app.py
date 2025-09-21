@@ -34,10 +34,16 @@ def upload_file():
     if file.filename == '':
         return 'Không có file nào được chọn', 400
     
-    # Lưu file
+    # Lưu file với tên gốc
     filename = file.filename
-    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-    return 'File đã được upload thành công', 200
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(file_path)
+    
+    # Lấy thông tin file
+    file_size = os.path.getsize(file_path)
+    file_size_mb = round(file_size / (1024 * 1024), 2)
+    
+    return f'File "{filename}" ({file_size_mb} MB) đã được upload thành công', 200
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
