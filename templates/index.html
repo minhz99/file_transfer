@@ -3,334 +3,2107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Truyền File LAN</title>
+    <meta name="description" content="Hệ thống truyền tải file tốc độ cao trong mạng LAN hỗ trợ cắt nhỏ file, khôi phục khi gián đoạn, WebRTC Peer-to-Peer trực tiếp và giao diện Glassmorphism cao cấp.">
+    <title>LAN File Transfer - Truyền File Siêu Tốc & P2P</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
+        :root {
+            --bg-color: #0c0b14;
+            --card-bg: rgba(22, 20, 36, 0.65);
+            --card-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --accent-gradient: linear-gradient(135deg, #6366f1, #a855f7);
+            --accent-color: #6366f1;
+            --accent-glow: rgba(99, 102, 241, 0.25);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.2);
+            --error: #ef4444;
+            --error-glow: rgba(239, 68, 68, 0.2);
+            --warning: #f59e0b;
+            --warning-glow: rgba(245, 158, 11, 0.2);
+            --font-display: 'Outfit', sans-serif;
+            --font-sans: 'Inter', sans-serif;
         }
-        .container {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-        h1 {
-            color: #333;
-            text-align: center;
-        }
-        h2 {
-            color: #666;
-            margin-top: 0;
-        }
-        .upload-form {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin: 20px 0;
-        }
-        .file-input {
-            padding: 10px;
-            border: 2px dashed #ccc;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .upload-btn {
-            background-color: #007AFF;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        .upload-btn:hover {
-            background-color: #0056b3;
-        }
-        .file-list {
-            margin-top: 20px;
-        }
-        .file-list ul {
-            list-style: none;
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
             padding: 0;
         }
-        .file-list li {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at 50% 50%, #17152b 0%, #0c0b14 100%);
+            padding: 20px;
+        }
+
+        /* Ambient Glow Blobs */
+        .ambient-glow {
+            position: fixed;
+            width: 450px;
+            height: 450px;
+            border-radius: 50%;
+            filter: blur(120px);
+            z-index: -1;
+            opacity: 0.12;
+            pointer-events: none;
+        }
+        .glow-1 {
+            top: -10%;
+            left: 10%;
+            background: #6366f1;
+        }
+        .glow-2 {
+            bottom: -10%;
+            right: 10%;
+            background: #a855f7;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 10px;
+        }
+
+        /* Header design */
+        header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding-bottom: 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 24px;
         }
-        .file-list a {
-            color: #007AFF;
-            text-decoration: none;
-            flex: 1;
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
-        .file-list a:hover {
-            text-decoration: underline;
+
+        .logo-icon {
+            background: var(--accent-gradient);
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 15px var(--accent-glow);
         }
-        .file-size {
-            color: #666;
-            font-size: 0.9em;
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #ffffff 50%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-        .download-btn {
-            background-color: #28a745;
-            color: white;
-            padding: 5px 10px;
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; box-shadow: 0 0 12px var(--success); }
+            100% { opacity: 0.6; }
+        }
+
+        /* Tabs Menu */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 6px;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            max-width: fit-content;
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-btn {
+            background: transparent;
             border: none;
-            border-radius: 3px;
+            color: var(--text-secondary);
+            padding: 10px 18px;
+            border-radius: 8px;
             cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            font-family: var(--font-display);
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .tab-btn.active {
+            background: var(--accent-gradient);
+            color: #ffffff;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Responsive Layout Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 28px;
+        }
+
+        @media (max-width: 950px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Glassmorphic Panel Cards */
+        .panel {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            margin-bottom: 28px;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        h2 {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Dropzone (Drag & Drop) */
+        .dropzone {
+            border: 2px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.01);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .dropzone:hover, .dropzone.dragover {
+            border-color: var(--accent-color);
+            background: rgba(99, 102, 241, 0.04);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.1);
+        }
+
+        .upload-icon {
+            color: var(--text-secondary);
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+
+        .dropzone:hover .upload-icon, .dropzone.dragover .upload-icon {
+            transform: translateY(-4px);
+            color: #ffffff;
+        }
+
+        .dropzone p {
             font-size: 14px;
-            margin-left: 10px;
+            color: var(--text-secondary);
         }
-        .download-btn:hover {
-            background-color: #218838;
+
+        .dropzone span {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.35);
         }
-        #status {
-            margin-top: 10px;
-            padding: 10px;
-            border-radius: 5px;
+
+        /* Hidden Inputs */
+        #fileInput, #p2pFileInput {
             display: none;
         }
-        .success {
-            background-color: #d4edda;
-            color: #155724;
+
+        /* Queue List */
+        .queue-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 10px;
         }
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
+
+        .queue-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: all 0.3s ease;
         }
-        .refresh-btn {
-            background-color: #6c757d;
-            color: white;
-            padding: 5px 10px;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
+
+        .queue-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .queue-card-header .file-name {
+            font-weight: 500;
             font-size: 14px;
-            margin-bottom: 10px;
+            color: #ffffff;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+            max-width: 75%;
         }
-        .refresh-btn:hover {
-            background-color: #5a6268;
+
+        .queue-card-header .file-size {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-family: var(--font-display);
         }
-        .section {
-            margin-bottom: 30px;
+
+        /* Progress Bar wrapper */
+        .progress-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
+
         .progress-bar {
             width: 100%;
-            height: 20px;
-            background-color: #f0f0f0;
-            border-radius: 10px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
             overflow: hidden;
-            margin: 10px 0;
         }
+
         .progress-fill {
             height: 100%;
-            background-color: #007AFF;
             width: 0%;
-            transition: width 0.3s ease;
+            background: var(--accent-gradient);
+            border-radius: 3px;
+            transition: width 0.1s linear;
         }
-        .file-progress {
-            margin: 10px 0;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background-color: #f9f9f9;
+
+        .progress-fill.progress-completed {
+            background: var(--success);
         }
-        .file-progress-name {
-            font-weight: bold;
-            margin-bottom: 5px;
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: var(--text-secondary);
         }
-        .file-progress-bar {
-            width: 100%;
-            height: 15px;
-            background-color: #e0e0e0;
-            border-radius: 7px;
+
+        .progress-percent {
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        .progress-percent.completed {
+            color: var(--success);
+        }
+
+        /* Actions & Status badge */
+        .queue-card-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2px;
+        }
+
+        .status-badge {
+            font-size: 11px;
+            font-weight: 500;
+            padding: 4px 8px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .status-pending {
+            background: var(--warning-glow);
+            color: var(--warning);
+        }
+
+        .status-checking {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+        }
+
+        .status-connecting {
+            background: rgba(168, 85, 247, 0.12);
+            color: #c084fc;
+        }
+
+        .status-uploading {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--accent-color);
+        }
+
+        .status-paused {
+            background: rgba(255, 255, 255, 0.08);
+            color: #d1d5db;
+        }
+
+        .status-merging {
+            background: rgba(168, 85, 247, 0.15);
+            color: #c084fc;
+        }
+
+        .status-completed {
+            background: var(--success-glow);
+            color: var(--success);
+        }
+
+        .status-failed {
+            background: var(--error-glow);
+            color: var(--error);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-action {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: var(--text-primary);
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-action:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.12);
+        }
+
+        .btn-pause:hover {
+            color: var(--warning);
+        }
+
+        .btn-resume:hover {
+            color: var(--success);
+        }
+
+        .btn-cancel:hover {
+            color: var(--error);
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        /* File List items */
+        .file-list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .btn-refresh {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            color: var(--text-secondary);
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-refresh:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.12);
+            transform: rotate(30deg);
+        }
+
+        .file-list-items {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 340px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        /* Scrollbar styling */
+        .file-list-items::-webkit-scrollbar, .device-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .file-list-items::-webkit-scrollbar-track, .device-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.01);
+            border-radius: 3px;
+        }
+        .file-list-items::-webkit-scrollbar-thumb, .device-list::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 3px;
+        }
+        .file-list-items::-webkit-scrollbar-thumb:hover, .device-list::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.18);
+        }
+
+        .file-item {
+            background: rgba(255, 255, 255, 0.015);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.2s ease;
+        }
+
+        .file-item:hover {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: rgba(255, 255, 255, 0.06);
+            transform: translateX(2px);
+        }
+
+        .file-item-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .file-icon {
+            color: rgba(255, 255, 255, 0.3);
+            flex-shrink: 0;
+        }
+
+        .file-item:hover .file-icon {
+            color: var(--accent-color);
+        }
+
+        .file-item-details {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .file-item-details .file-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: #ffffff;
+            text-decoration: none;
             overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-bottom: 2px;
         }
-        .file-progress-fill {
-            height: 100%;
-            background-color: #28a745;
-            width: 0%;
-            transition: width 0.3s ease;
+
+        .file-item-details a.file-name:hover {
+            color: var(--accent-color);
+            text-decoration: underline;
         }
-        .file-progress-status {
+
+        .file-item-details .file-size {
+            font-size: 11px;
+            color: var(--text-secondary);
+            font-family: var(--font-display);
+        }
+
+        .btn-download {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .btn-download:hover {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: var(--success);
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+        }
+
+        .empty-list {
+            text-align: center;
+            padding: 30px 10px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            border: 1px dashed rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.005);
+        }
+
+        /* --- P2P Specific Styles --- */
+        .device-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 480px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .device-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 14px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .device-card:hover {
+            border-color: var(--accent-color);
+            background: rgba(99, 102, 241, 0.03);
+            transform: translateX(2px);
+        }
+
+        .device-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .device-avatar {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent-color);
+            flex-shrink: 0;
+        }
+
+        .device-card:hover .device-avatar {
+            background: var(--accent-gradient);
+            color: #ffffff;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .device-details {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .device-details .dev-name {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: #ffffff;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .device-details .dev-ip {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .btn-send-p2p {
+            background: var(--accent-gradient);
+            border: none;
+            color: #ffffff;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .btn-send-p2p:hover {
+            box-shadow: 0 0 12px var(--accent-glow);
+            filter: brightness(1.1);
+        }
+
+        /* P2P Confirmation Dialog */
+        .p2p-dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .p2p-dialog-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .p2p-dialog {
+            background: rgba(22, 20, 36, 0.95);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.6);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .p2p-dialog-overlay.active .p2p-dialog {
+            transform: scale(1);
+        }
+        .p2p-dialog-title {
+            font-family: var(--font-display);
+            font-size: 17px;
+            font-weight: 700;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .p2p-dialog-body {
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .p2p-dialog-footer {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
             margin-top: 5px;
-            font-size: 0.9em;
-            color: #666;
         }
-        .file-progress.success .file-progress-fill {
-            background-color: #28a745;
+        .btn-dialog-accept {
+            background: var(--success);
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: background 0.2s;
         }
-        .file-progress.error .file-progress-fill {
-            background-color: #dc3545;
+        .btn-dialog-accept:hover {
+            background: #059669;
         }
-        .file-progress.error .file-progress-status {
-            color: #dc3545;
+        .btn-dialog-decline {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid var(--card-border);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+        .btn-dialog-decline:hover {
+            background: rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
 <body>
+    <!-- Glow effects -->
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+
     <div class="container">
-        <h1>Truyền File qua LAN</h1>
-        
-        <div class="section">
-            <h2>📤 Tải file lên máy chủ</h2>
-            <form class="upload-form" id="uploadForm">
-                <input type="file" id="file" name="file" class="file-input" multiple required>
-                <div style="margin: 10px 0;">
-                    <button type="submit" class="upload-btn">Tải lên tất cả</button>
-                    <button type="button" class="refresh-btn" onclick="clearFiles()">🗑️ Xóa danh sách</button>
+        <!-- Header -->
+        <header>
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
                 </div>
-                <div id="fileCount" style="color: #666; font-size: 0.9em; margin-top: 5px;"></div>
-            </form>
-            <div id="status"></div>
-            
-            <!-- Progress section -->
-            <div id="progressSection" style="display: none;">
-                <h3>Tiến trình tải lên:</h3>
-                <div id="overallProgress">
-                    <div class="progress-bar">
-                        <div id="overallProgressBar" class="progress-fill"></div>
-                    </div>
-                    <span id="overallProgressText">0%</span>
+                <h1>LAN File Transfer</h1>
+            </div>
+            <div class="connection-status">
+                <div class="status-dot"></div>
+                <span>Đang hoạt động (LAN)</span>
+            </div>
+        </header>
+
+        <!-- Tabs Switcher Menu -->
+        <nav class="tabs" aria-label="Tab chính">
+            <button class="tab-btn active" id="btnServerTab" onclick="switchTab(event, 'serverTab')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Truyền lên Server
+            </button>
+            <button class="tab-btn" id="btnP2pTab" onclick="switchTab(event, 'p2pTab')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Truyền P2P trực tiếp (LAN)
+            </button>
+        </nav>
+
+        <!-- TAB 1: SERVER TRANSFER -->
+        <div id="serverTab" class="tab-content active">
+            <div class="main-grid">
+                <!-- Left Side: Upload & Queue -->
+                <div class="left-column">
+                    <section class="panel" aria-labelledby="uploadHeading">
+                        <h2 id="uploadHeading">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            Tải Tệp Lên Server
+                        </h2>
+                        
+                        <div class="dropzone" id="dropZone" role="button" tabindex="0" aria-label="Kéo thả tệp vào đây hoặc nhấp để chọn tệp">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="upload-icon"><path d="M12 13v8M12 13l-3-3M12 13l3-3"/><path d="M20.35 15.63A9 9 0 0 0 12 3a9 9 0 0 0-8.35 12.63A4 4 0 0 0 4 23h12a6 6 0 0 0 4.35-7.37z"/></svg>
+                            <div>
+                                <p style="font-weight: 500; color: #ffffff; margin-bottom: 4px;">Kéo thả file vào đây</p>
+                                <p>hoặc nhấn để duyệt thư mục</p>
+                            </div>
+                            <span>Hỗ trợ file siêu lớn (ZIP, TAR, ISO, MKV...) không giới hạn dung lượng</span>
+                            <input type="file" id="fileInput" multiple>
+                        </div>
+                    </section>
+
+                    <!-- Server Queue -->
+                    <section class="panel" id="queueWrapper" style="display: none;" aria-labelledby="queueHeading">
+                        <h2 id="queueHeading">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            Tiến Trình Truyền Tải Lên Server
+                        </h2>
+                        <div class="queue-container" id="uploadQueueContainer"></div>
+                    </section>
                 </div>
-                <div id="fileProgressList"></div>
+
+                <!-- Right Side: Library lists -->
+                <div class="right-column">
+                    <section class="panel" aria-labelledby="receivedHeading">
+                        <div class="file-list-header">
+                            <h2 id="receivedHeading">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                                Tệp Đã Nhận (uploads)
+                            </h2>
+                            <button class="btn-refresh" id="refreshUploadedBtn" onclick="loadUploadedFiles()" aria-label="Làm mới danh sách tệp đã nhận">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                            </button>
+                        </div>
+                        <div class="file-list-items" id="uploadedFilesList">
+                            {% if uploaded_files %}
+                                {% for file in uploaded_files %}
+                                <div class="file-item">
+                                    <div class="file-item-info">
+                                        <svg class="file-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        <div class="file-item-details">
+                                            <a href="{{ url_for('uploaded_file', filename=file.name) }}" target="_blank" class="file-name" title="{{ file.name }}">{{ file.name }}</a>
+                                            <span class="file-size">{{ file.size_formatted }}</span>
+                                        </div>
+                                    </div>
+                                    <button class="btn-download" data-url="{{ url_for('uploaded_file', filename=file.name) }}" data-filename="{{ file.name }}" onclick="downloadFile(this.dataset.url, this.dataset.filename)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                        Tải xuống
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="empty-list">Chưa có file nào được tải lên</div>
+                            {% endif %}
+                        </div>
+                    </section>
+
+                    <section class="panel" aria-labelledby="sharedHeading">
+                        <div class="file-list-header">
+                            <h2 id="sharedHeading">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                                Thư Mục Chia Sẻ (shared_files)
+                            </h2>
+                            <button class="btn-refresh" id="refreshSharedBtn" onclick="loadSharedFiles()" aria-label="Làm mới danh sách tệp chia sẻ">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                            </button>
+                        </div>
+                        <div class="file-list-items" id="sharedFilesList">
+                            {% if shared_files %}
+                                {% for file in shared_files %}
+                                <div class="file-item">
+                                    <div class="file-item-info">
+                                        <svg class="file-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                        <div class="file-item-details">
+                                            <span class="file-name" title="{{ file.name }}">{{ file.name }}</span>
+                                            <span class="file-size">{{ file.size_formatted }}</span>
+                                        </div>
+                                    </div>
+                                    <button class="btn-download" data-url="{{ url_for('shared_file', filename=file.name) }}" data-filename="{{ file.name }}" onclick="downloadFile(this.dataset.url, this.dataset.filename)">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                        Tải xuống
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="empty-list">Chưa có file nào trong thư mục shared_files</div>
+                            {% endif %}
+                        </div>
+                    </section>
+                </div>
             </div>
         </div>
 
-        <div class="section">
-            <h2>📁 File đã tải lên</h2>
-            <button class="refresh-btn" onclick="location.reload()">🔄 Làm mới</button>
-            <div class="file-list">
-                <ul>
-                    {% for file in uploaded_files %}
-                    <li>
-                        <a href="{{ url_for('uploaded_file', filename=file) }}" target="_blank">{{ file }}</a>
-                        <button class="download-btn" data-url="{{ url_for('uploaded_file', filename=file) }}" data-filename="{{ file }}" onclick="downloadFile(this.dataset.url, this.dataset.filename)">📥 Tải xuống</button>
-                    </li>
-                    {% endfor %}
-                </ul>
+        <!-- TAB 2: PEER-TO-PEER TRANSFER -->
+        <div id="p2pTab" class="tab-content">
+            <!-- User Device Information Banner -->
+            <div style="background: rgba(255, 255, 255, 0.015); backdrop-filter: blur(10px); padding: 16px 20px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <div>
+                    <span style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500;">Thiết bị của bạn</span>
+                    <div id="myDeviceNameDisplay" style="font-size: 15px; font-weight: 600; color: #ffffff; margin-top: 2px;"></div>
+                </div>
+                <button class="btn-action" onclick="changeDeviceName()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    Đổi tên thiết bị
+                </button>
             </div>
-        </div>
 
-        <div class="section">
-            <h2>💻 File từ máy chủ (shared_files)</h2>
-            <p style="color: #666; font-size: 0.9em; margin-bottom: 10px;">
-                📁 Chỉ hiển thị file từ thư mục <code>shared_files</code> trên máy chủ
-            </p>
-            <button class="refresh-btn" onclick="loadSharedFiles()">🔄 Làm mới</button>
-            <div class="file-list">
-                <ul id="sharedFilesList">
-                    {% for file in shared_files %}
-                    <li>
-                        <span>{{ file }}</span>
-                        <button class="download-btn" data-url="{{ url_for('shared_file', filename=file) }}" data-filename="{{ file }}" onclick="downloadFile(this.dataset.url, this.dataset.filename)">📥 Tải xuống</button>
-                    </li>
-                    {% endfor %}
-                </ul>
+            <div class="main-grid">
+                <!-- Left Side: Devices List -->
+                <div class="left-column">
+                    <section class="panel" id="devicesPanel" aria-labelledby="devicesHeading">
+                        <h2 id="devicesHeading">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            Thiết Bị Đang Online Trong LAN
+                        </h2>
+                        <div class="device-list" id="devicesList">
+                            <div class="empty-list">Đang quét các thiết bị khác trong mạng LAN...</div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Right Side: P2P Queue -->
+                <div class="right-column">
+                    <section class="panel" id="p2pQueueWrapper" style="display: none;" aria-labelledby="p2pQueueHeading">
+                        <h2 id="p2pQueueHeading">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                            Tiến Trình Truyền File P2P
+                        </h2>
+                        <div class="queue-container" id="p2pQueueContainer"></div>
+                    </section>
+                </div>
+            </div>
+            <!-- Hidden P2P File Input -->
+            <input type="file" id="p2pFileInput">
+        </div>
+    </div>
+
+    <!-- P2P Dialog Confirmation Overlay -->
+    <div class="p2p-dialog-overlay" id="p2pDialogOverlay">
+        <div class="p2p-dialog" role="dialog" aria-labelledby="dialogTitle" aria-describedby="p2pDialogBody">
+            <div class="p2p-dialog-title" id="dialogTitle">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Yêu cầu nhận tệp P2P
+            </div>
+            <div class="p2p-dialog-body" id="p2pDialogBody">
+                <!-- Message content updated dynamically -->
+            </div>
+            <div class="p2p-dialog-footer">
+                <button class="btn-dialog-decline" id="btnP2pDecline">Từ chối</button>
+                <button class="btn-dialog-accept" id="btnP2pAccept">Đồng ý nhận</button>
             </div>
         </div>
     </div>
 
+    <!-- JavaScript Control Logic -->
     <script>
-        document.getElementById('uploadForm').onsubmit = async (e) => {
+        // Tab switching logic
+        function switchTab(event, tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            document.getElementById(tabId).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // --- CẤU HÌNH SERVER CHUNKED UPLOAD ---
+        const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB mỗi chunk
+        const MAX_CONCURRENT = 3;            // Tối đa 3 chunk upload song song mỗi file
+        
+        let uploadSessions = {};             // Lưu trữ trạng thái các file đang tải lên server
+
+        // --- CẤU HÌNH WEBRTC P2P ---
+        let p2pSessions = {};                // Lưu trữ trạng thái các phiên truyền file P2P
+        let currentP2pTargetId = '';
+        let currentP2pTargetName = '';
+        let activeP2pRequest = null;         // Lưu yêu cầu file-meta đang chờ duyệt
+
+        // Sinh tên thiết bị và ID độc nhất
+        function getDeviceName() {
+            const userAgent = navigator.userAgent;
+            let os = "Thiết bị không rõ";
+            let browser = "Trình duyệt không rõ";
+            
+            if (userAgent.indexOf("Win") != -1) os = "Windows";
+            else if (userAgent.indexOf("Mac") != -1) os = "macOS";
+            else if (userAgent.indexOf("Linux") != -1) os = "Linux";
+            else if (userAgent.indexOf("Android") != -1) os = "Android";
+            else if (userAgent.indexOf("like Mac") != -1) os = "iOS";
+            
+            if (userAgent.indexOf("Edge") != -1) browser = "Edge";
+            else if (userAgent.indexOf("Chrome") != -1) browser = "Chrome";
+            else if (userAgent.indexOf("Safari") != -1) browser = "Safari";
+            else if (userAgent.indexOf("Firefox") != -1) browser = "Firefox";
+            
+            let rand = Math.floor(1000 + Math.random() * 9000);
+            return `${os} (${browser}) #${rand}`;
+        }
+
+        let MY_DEVICE_NAME = localStorage.getItem('device_name') || getDeviceName();
+        localStorage.setItem('device_name', MY_DEVICE_NAME);
+
+        let MY_DEVICE_ID = localStorage.getItem('device_id');
+        if (!MY_DEVICE_ID) {
+            MY_DEVICE_ID = 'dev_' + Math.random().toString(36).substring(2, 15);
+            localStorage.setItem('device_id', MY_DEVICE_ID);
+        }
+
+        // Hiển thị tên thiết bị
+        document.getElementById('myDeviceNameDisplay').textContent = MY_DEVICE_NAME;
+
+        function changeDeviceName() {
+            const newName = prompt("Nhập tên thiết bị mới của bạn:", MY_DEVICE_NAME);
+            if (newName && newName.trim() !== "") {
+                MY_DEVICE_NAME = newName.trim();
+                localStorage.setItem('device_name', MY_DEVICE_NAME);
+                document.getElementById('myDeviceNameDisplay').textContent = MY_DEVICE_NAME;
+                runHeartbeat(); // Gửi lại đăng ký
+            }
+        }
+
+        // Định dạng kích thước file
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Định dạng tốc độ tải lên
+        function formatSpeed(bytesPerSec) {
+            if (bytesPerSec <= 0) return '0 B/s';
+            const k = 1024;
+            const sizes = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+            const i = Math.floor(Math.log(bytesPerSec) / Math.log(k));
+            return parseFloat((bytesPerSec / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        // Định dạng thời gian còn lại
+        function formatTime(seconds) {
+            if (isNaN(seconds) || !isFinite(seconds) || seconds < 0) return '--';
+            if (seconds < 60) return Math.round(seconds) + 's';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.round(seconds % 60);
+            if (mins < 60) return mins + 'm ' + secs + 's';
+            const hrs = Math.floor(mins / 60);
+            const remMins = mins % 60;
+            return hrs + 'h ' + remMins + 'm';
+        }
+
+        // Tạo unique ID cho upload dựa trên file properties
+        function generateUploadId(file) {
+            const inputStr = `${file.name}_${file.size}_${file.lastModified}`;
+            let hash = 0;
+            for (let i = 0; i < inputStr.length; i++) {
+                const char = inputStr.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return 'up_' + Math.abs(hash) + '_' + file.size;
+        }
+
+        // --- TRUYỀN FILE LÊN SERVER (CHUNKS) ---
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropZone.onclick = () => fileInput.click();
+        dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('dragover'); };
+        dropZone.ondragleave = () => { dropZone.classList.remove('dragover'); };
+        dropZone.ondrop = (e) => {
             e.preventDefault();
-            
-            const fileInput = document.getElementById('file');
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) handleFilesSelected(files);
+        };
+        fileInput.onchange = () => {
             const files = fileInput.files;
-            const statusDiv = document.getElementById('status');
-            const progressSection = document.getElementById('progressSection');
-            const fileProgressList = document.getElementById('fileProgressList');
-            const overallProgressBar = document.getElementById('overallProgressBar');
-            const overallProgressText = document.getElementById('overallProgressText');
+            if (files.length > 0) handleFilesSelected(files);
+        };
+
+        function handleFilesSelected(files) {
+            const queueContainer = document.getElementById('uploadQueueContainer');
+            const queueWrapper = document.getElementById('queueWrapper');
+            queueWrapper.style.display = 'block';
             
-            if (files.length === 0) {
-                statusDiv.textContent = 'Vui lòng chọn ít nhất một file';
-                statusDiv.className = 'error';
-                statusDiv.style.display = 'block';
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const uploadId = generateUploadId(file);
+                
+                if (uploadSessions[uploadId]) continue;
+                
+                const card = document.createElement('div');
+                card.className = 'queue-card';
+                card.id = `card-${uploadId}`;
+                card.innerHTML = `
+                    <div class="queue-card-header">
+                        <span class="file-name" title="${file.name}">${file.name}</span>
+                        <span class="file-size">${formatSize(file.size)}</span>
+                    </div>
+                    <div class="progress-wrapper">
+                        <div class="progress-bar">
+                            <div id="fill-${uploadId}" class="progress-fill"></div>
+                        </div>
+                        <div class="progress-info">
+                            <span id="percent-${uploadId}" class="progress-percent">0%</span>
+                            <span id="speed-${uploadId}" class="transfer-speed"></span>
+                            <span id="eta-${uploadId}" class="transfer-eta"></span>
+                        </div>
+                    </div>
+                    <div class="queue-card-actions">
+                        <span id="status-${uploadId}" class="status-badge status-pending">Đang chuẩn bị...</span>
+                        <div class="action-buttons">
+                            <button class="btn-action btn-pause" id="btn-pause-${uploadId}" onclick="togglePause('${uploadId}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                                Tạm dừng
+                            </button>
+                            <button class="btn-action btn-cancel" onclick="cancelUpload('${uploadId}')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                Hủy
+                            </button>
+                        </div>
+                    </div>
+                `;
+                queueContainer.appendChild(card);
+                
+                const session = {
+                    id: uploadId,
+                    file: file,
+                    totalChunks: Math.ceil(file.size / CHUNK_SIZE),
+                    completedChunks: new Set(),
+                    activeXhrs: {},
+                    chunksSentBytes: {},
+                    status: 'pending',
+                    paused: false,
+                    aborted: false,
+                    lastLoadedBytes: 0,
+                    speed: 0,
+                    eta: null,
+                    retries: {}
+                };
+                
+                uploadSessions[uploadId] = session;
+                startSession(uploadId);
+            }
+            fileInput.value = '';
+        }
+
+        async function startSession(id) {
+            const session = uploadSessions[id];
+            if (!session) return;
+            
+            updateSessionUI(session, 'checking', 'Đang kiểm tra...');
+            
+            try {
+                const response = await fetch(`/upload/status?upload_id=${session.id}`);
+                if (!response.ok) throw new Error('Không thể kiểm tra trạng thái tải lên');
+                
+                const data = await response.json();
+                session.completedChunks = new Set(data.completed_chunks || []);
+                updateProgressUI(session);
+                
+                if (session.completedChunks.size === session.totalChunks) {
+                    mergeSession(session);
+                    return;
+                }
+                
+                session.status = 'uploading';
+                updateSessionUI(session, 'uploading', 'Đang truyền dữ liệu...');
+                
+                for (let i = 0; i < MAX_CONCURRENT; i++) {
+                    uploadNextChunk(session);
+                }
+            } catch (err) {
+                console.error(err);
+                session.status = 'failed';
+                updateSessionUI(session, 'failed', 'Lỗi: ' + err.message);
+            }
+        }
+
+        function uploadNextChunk(session) {
+            if (session.paused || session.aborted || session.status !== 'uploading') return;
+            
+            let nextIndex = -1;
+            for (let i = 0; i < session.totalChunks; i++) {
+                if (!session.completedChunks.has(i) && !session.activeXhrs[i]) {
+                    nextIndex = i;
+                    break;
+                }
+            }
+            
+            if (nextIndex === -1) {
+                const activeCount = Object.keys(session.activeXhrs).length;
+                if (activeCount === 0 && session.completedChunks.size === session.totalChunks) {
+                    mergeSession(session);
+                }
                 return;
             }
             
-            // Hiển thị progress section
-            progressSection.style.display = 'block';
-            fileProgressList.innerHTML = '';
+            const i = nextIndex;
+            const start = i * CHUNK_SIZE;
+            const end = Math.min((i + 1) * CHUNK_SIZE, session.file.size);
+            const chunkSlice = session.file.slice(start, end);
             
-            // Reset progress
-            overallProgressBar.style.width = '0%';
-            overallProgressText.textContent = '0%';
+            const xhr = new XMLHttpRequest();
+            session.activeXhrs[i] = xhr;
+            session.chunksSentBytes[i] = 0;
             
-            let completedFiles = 0;
-            let totalFiles = files.length;
+            const formData = new FormData();
+            formData.append('upload_id', session.id);
+            formData.append('chunk_index', i);
+            formData.append('file', chunkSlice, session.file.name + `.chunk_${i}`);
             
-            // Tạo progress cho từng file
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const fileProgressDiv = document.createElement('div');
-                fileProgressDiv.className = 'file-progress';
-                fileProgressDiv.innerHTML = `
-                    <div class="file-progress-name">${file.name}</div>
-                    <div class="file-progress-bar">
-                        <div class="file-progress-fill"></div>
-                    </div>
-                    <div class="file-progress-status">Đang chuẩn bị...</div>
-                `;
-                fileProgressList.appendChild(fileProgressDiv);
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable && !session.paused && !session.aborted) {
+                    session.chunksSentBytes[i] = e.loaded;
+                    updateProgressUI(session);
+                }
+            };
+            
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    session.completedChunks.add(i);
+                    cleanupChunkXhr(session, i);
+                    updateProgressUI(session);
+                    uploadNextChunk(session);
+                } else {
+                    handleChunkError(session, i, `Lỗi server (${xhr.status})`);
+                }
+            };
+            
+            xhr.onerror = () => {
+                handleChunkError(session, i, 'Mất kết nối LAN');
+            };
+            
+            xhr.open('POST', '/upload/chunk');
+            xhr.send(formData);
+        }
+
+        function cleanupChunkXhr(session, index) {
+            if (session.activeXhrs[index]) delete session.activeXhrs[index];
+            if (session.chunksSentBytes[index] !== undefined) delete session.chunksSentBytes[index];
+        }
+
+        function handleChunkError(session, index, errMsg) {
+            cleanupChunkXhr(session, index);
+            if (session.paused || session.aborted) return;
+            
+            const count = session.retries[index] || 0;
+            if (count < 3) {
+                session.retries[index] = count + 1;
+                setTimeout(() => uploadNextChunk(session), 1500);
+            } else {
+                session.status = 'failed';
+                pauseSession(session.id);
+                updateSessionUI(session, 'failed', `Lỗi phân đoạn ${index}: ${errMsg}`);
+            }
+        }
+
+        async function mergeSession(session) {
+            session.status = 'merging';
+            updateSessionUI(session, 'merging', 'Đang ghép file...');
+            
+            try {
+                const response = await fetch('/upload/merge', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        upload_id: session.id,
+                        filename: session.file.name,
+                        total_chunks: session.totalChunks
+                    })
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                    session.status = 'completed';
+                    updateSessionUI(session, 'completed', 'Hoàn thành!');
+                    loadUploadedFiles();
+                } else {
+                    throw new Error(data.error || 'Ghép file thất bại');
+                }
+            } catch (err) {
+                console.error(err);
+                session.status = 'failed';
+                updateSessionUI(session, 'failed', 'Lỗi: ' + err.message);
+            }
+        }
+
+        function pauseSession(id) {
+            const session = uploadSessions[id];
+            if (!session || session.status !== 'uploading') return;
+            
+            session.paused = true;
+            session.status = 'paused';
+            
+            for (const index in session.activeXhrs) {
+                session.activeXhrs[index].abort();
+                cleanupChunkXhr(session, index);
+            }
+            updateSessionUI(session, 'paused', 'Tạm dừng');
+            updateProgressUI(session);
+        }
+
+        function resumeSession(id) {
+            const session = uploadSessions[id];
+            if (!session || session.status !== 'paused') return;
+            
+            session.paused = false;
+            session.status = 'uploading';
+            updateSessionUI(session, 'uploading', 'Đang truyền tiếp...');
+            
+            session.lastLoadedBytes = getUploadedBytes(session);
+            for (let i = 0; i < MAX_CONCURRENT; i++) {
+                uploadNextChunk(session);
+            }
+        }
+
+        async function cancelUpload(id) {
+            const session = uploadSessions[id];
+            if (!session) return;
+            
+            session.aborted = true;
+            session.status = 'failed';
+            
+            for (const index in session.activeXhrs) {
+                session.activeXhrs[index].abort();
+                cleanupChunkXhr(session, index);
             }
             
-            // Upload từng file
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                const fileProgressDiv = fileProgressList.children[i];
-                const fileProgressFill = fileProgressDiv.querySelector('.file-progress-fill');
-                const fileProgressStatus = fileProgressDiv.querySelector('.file-progress-status');
+            try {
+                await fetch('/upload/cancel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ upload_id: session.id })
+                });
+            } catch (err) {
+                console.error(err);
+            }
+            
+            const card = document.getElementById(`card-${session.id}`);
+            if (card) {
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.9)';
+                setTimeout(() => { card.remove(); checkQueueContainerEmpty(); }, 300);
+            }
+            delete uploadSessions[id];
+        }
+
+        function getUploadedBytes(session) {
+            let total = 0;
+            for (let i = 0; i < session.totalChunks; i++) {
+                const size = (i === session.totalChunks - 1) 
+                    ? (session.file.size - i * CHUNK_SIZE) 
+                    : CHUNK_SIZE;
+                    
+                if (session.completedChunks.has(i)) total += size;
+                else if (session.activeXhrs[i]) total += session.chunksSentBytes[i] || 0;
+            }
+            return total;
+        }
+
+        function updateProgressUI(session) {
+            const uploadedBytes = getUploadedBytes(session);
+            const percent = Math.min((uploadedBytes / session.file.size) * 100, 100);
+            
+            const fillEl = document.getElementById(`fill-${session.id}`);
+            const percentEl = document.getElementById(`percent-${session.id}`);
+            
+            if (fillEl) fillEl.style.width = percent.toFixed(1) + '%';
+            if (percentEl) percentEl.textContent = percent.toFixed(1) + '%';
+        }
+
+        function updateSessionUI(session, status, text) {
+            const card = document.getElementById(`card-${session.id}`);
+            if (!card) return;
+            
+            const statusEl = document.getElementById(`status-${session.id}`);
+            const btnPause = document.getElementById(`btn-pause-${session.id}`);
+            
+            if (statusEl) {
+                statusEl.textContent = text;
+                statusEl.className = 'status-badge';
+                statusEl.classList.add(`status-${status}`);
+            }
+            
+            if (btnPause) {
+                if (status === 'paused') {
+                    btnPause.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        Tiếp tục
+                    `;
+                } else if (status === 'uploading') {
+                    btnPause.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                        Tạm dừng
+                    `;
+                    btnPause.style.display = 'inline-flex';
+                } else {
+                    btnPause.style.display = 'none';
+                }
+            }
+            
+            if (status === 'completed') {
+                const fillEl = document.getElementById(`fill-${session.id}`);
+                const percentEl = document.getElementById(`percent-${session.id}`);
+                const speedEl = document.getElementById(`speed-${session.id}`);
+                const etaEl = document.getElementById(`eta-${session.id}`);
+                
+                if (fillEl) {
+                    fillEl.style.width = '100%';
+                    fillEl.classList.add('progress-completed');
+                }
+                if (percentEl) {
+                    percentEl.textContent = '100%';
+                    percentEl.classList.add('completed');
+                }
+                if (speedEl) speedEl.textContent = '';
+                if (etaEl) etaEl.textContent = '';
+                
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.9)';
+                    setTimeout(() => { card.remove(); checkQueueContainerEmpty(); }, 300);
+                }, 5000);
+            }
+        }
+
+        function togglePause(id) {
+            const session = uploadSessions[id];
+            if (!session) return;
+            if (session.status === 'uploading') pauseSession(id);
+            else if (session.status === 'paused') resumeSession(id);
+        }
+
+        function checkQueueContainerEmpty() {
+            const container = document.getElementById('uploadQueueContainer');
+            const wrapper = document.getElementById('queueWrapper');
+            if (container.children.length === 0) wrapper.style.display = 'none';
+        }
+
+        // --- TRUYỀN FILE P2P TRỰC TIẾP (WEBRTC) ---
+
+        const p2pFileInput = document.getElementById('p2pFileInput');
+        
+        function chooseP2pFile(targetId, targetName) {
+            currentP2pTargetId = targetId;
+            currentP2pTargetName = targetName;
+            p2pFileInput.click();
+        }
+
+        p2pFileInput.onchange = () => {
+            const files = p2pFileInput.files;
+            if (files.length === 0) return;
+            const file = files[0];
+            
+            const uploadId = generateUploadId(file) + '_p2p';
+            if (p2pSessions[uploadId]) return;
+            
+            const session = {
+                id: uploadId,
+                targetId: currentP2pTargetId,
+                targetName: currentP2pTargetName,
+                file: file,
+                filename: file.name,
+                size: file.size,
+                role: 'sender',
+                status: 'pending',
+                paused: false,
+                aborted: false,
+                offset: 0,
+                sentBytes: 0,
+                lastSentBytes: 0,
+                speed: 0,
+                eta: null,
+                pc: null,
+                dc: null
+            };
+            p2pSessions[uploadId] = session;
+            
+            // Hiện panel Queue P2P
+            document.getElementById('p2pQueueWrapper').style.display = 'block';
+            addP2pQueueCard(uploadId, file.name, file.size, `Gửi sang: ${currentP2pTargetName}`, 'sender');
+            updateP2pSessionUI(session, 'pending', 'Đợi chấp nhận...');
+            
+            // Gửi WebRTC Offer Signaling
+            sendSignal(currentP2pTargetId, {
+                type: 'file-meta',
+                upload_id: uploadId,
+                name: file.name,
+                size: file.size,
+                sender_name: MY_DEVICE_NAME
+            });
+            
+            p2pFileInput.value = '';
+        }
+
+        function addP2pQueueCard(id, filename, size, directionText, role) {
+            const container = document.getElementById('p2pQueueContainer');
+            const card = document.createElement('div');
+            card.className = 'queue-card';
+            card.id = `p2p-card-${id}`;
+            card.innerHTML = `
+                <div class="queue-card-header">
+                    <span class="file-name" title="${filename}">${filename}</span>
+                    <span class="file-size">${formatSize(size)}</span>
+                </div>
+                <div style="font-size:11px; color:rgba(255,255,255,0.4); margin-top:-6px;">${directionText}</div>
+                <div class="progress-wrapper">
+                    <div class="progress-bar">
+                        <div id="p2p-fill-${id}" class="progress-fill"></div>
+                    </div>
+                    <div class="progress-info">
+                        <span id="p2p-percent-${id}" class="progress-percent">0%</span>
+                        <span id="p2p-speed-${id}" class="transfer-speed"></span>
+                        <span id="p2p-eta-${id}" class="transfer-eta"></span>
+                    </div>
+                </div>
+                <div class="queue-card-actions">
+                    <span id="p2p-status-${id}" class="status-badge status-pending">Đang chuẩn bị...</span>
+                    <div class="action-buttons">
+                        <button class="btn-action btn-cancel" onclick="cancelP2pUpload('${id}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            Hủy kết nối
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        }
+
+        function showP2pConfirm(senderId, senderName, filename, size, uploadId) {
+            activeP2pRequest = { senderId, senderName, filename, size, uploadId };
+            
+            const body = document.getElementById('p2pDialogBody');
+            body.innerHTML = `
+                Thiết bị <strong>${senderName}</strong> muốn gửi trực tiếp tệp tin:<br>
+                <span style="color:#ffffff; font-weight:600; display:block; margin:8px 0; word-break:break-all;">${filename}</span>
+                Dung lượng: <strong>${formatSize(size)}</strong><br><br>
+                Bạn có đồng ý nhận trực tiếp qua P2P LAN không? (Không thông qua server)
+            `;
+            
+            document.getElementById('p2pDialogOverlay').classList.add('active');
+        }
+
+        document.getElementById('btnP2pAccept').onclick = () => {
+            if (!activeP2pRequest) return;
+            const r = activeP2pRequest;
+            activeP2pRequest = null;
+            document.getElementById('p2pDialogOverlay').classList.remove('active');
+            
+            // Tạo session nhận
+            document.getElementById('p2pQueueWrapper').style.display = 'block';
+            addP2pQueueCard(r.uploadId, r.filename, r.size, `Nhận từ: ${r.senderName}`, 'receiver');
+            
+            const session = {
+                id: r.uploadId,
+                targetId: r.senderId,
+                targetName: r.senderName,
+                filename: r.filename,
+                size: r.size,
+                role: 'receiver',
+                status: 'connecting',
+                paused: false,
+                aborted: false,
+                receivedChunks: [],
+                receivedBytes: 0,
+                lastReceivedBytes: 0,
+                speed: 0,
+                eta: null,
+                pc: null,
+                dc: null
+            };
+            p2pSessions[r.uploadId] = session;
+            
+            // Phản hồi đồng ý
+            sendSignal(r.senderId, {
+                type: 'file-accept',
+                upload_id: r.uploadId
+            });
+            
+            // Khởi tạo WebRTC
+            initWebRtcConnection(session);
+        };
+
+        document.getElementById('btnP2pDecline').onclick = () => {
+            if (!activeP2pRequest) return;
+            const r = activeP2pRequest;
+            activeP2pRequest = null;
+            document.getElementById('p2pDialogOverlay').classList.remove('active');
+            
+            // Từ chối
+            sendSignal(r.senderId, {
+                type: 'file-decline',
+                upload_id: r.uploadId
+            });
+        };
+
+        // Khởi tạo kết nối WebRTC Peer
+        async function initWebRtcConnection(session) {
+            const pc = new RTCPeerConnection({
+                iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+            });
+            session.pc = pc;
+            
+            pc.onicecandidate = (e) => {
+                if (e.candidate) {
+                    sendSignal(session.targetId, {
+                        type: 'ice-candidate',
+                        upload_id: session.id,
+                        candidate: e.candidate
+                    });
+                }
+            };
+            
+            pc.onconnectionstatechange = () => {
+                console.log("WebRTC ConnectionState:", pc.connectionState);
+                if (pc.connectionState === 'connected') {
+                    updateP2pSessionUI(session, 'uploading', 'Đang truyền trực tiếp...');
+                } else if (pc.connectionState === 'failed' || pc.connectionState === 'disconnected') {
+                    handleP2pFailure(session, 'Mất kết nối WebRTC');
+                }
+            };
+            
+            if (session.role === 'sender') {
+                // Tạo DataChannel ở phía người gửi
+                const dc = pc.createDataChannel('fileTransfer', { ordered: true });
+                session.dc = dc;
+                setupDataChannel(session, dc);
                 
                 try {
-                    fileProgressStatus.textContent = 'Đang tải lên...';
-                    
-                    const formData = new FormData();
-                    formData.append('file', file);
-                    
-                    const response = await fetch('/upload', {
-                        method: 'POST',
-                        body: formData
+                    const offer = await pc.createOffer();
+                    await pc.setLocalDescription(offer);
+                    sendSignal(session.targetId, {
+                        type: 'webrtc-offer',
+                        upload_id: session.id,
+                        offer: offer
                     });
-                    
-                    if (response.ok) {
-                        fileProgressFill.style.width = '100%';
-                        fileProgressStatus.textContent = 'Hoàn thành';
-                        fileProgressDiv.classList.add('success');
-                    } else {
-                        fileProgressFill.style.width = '100%';
-                        fileProgressStatus.textContent = 'Lỗi: ' + await response.text();
-                        fileProgressDiv.classList.add('error');
+                    updateP2pSessionUI(session, 'connecting', 'Đang thiết lập kết nối...');
+                } catch(err) {
+                    handleP2pFailure(session, 'Lỗi tạo Offer: ' + err.message);
+                }
+            } else {
+                // Ở phía người nhận, lắng nghe kênh DataChannel từ sender
+                pc.ondatachannel = (e) => {
+                    const dc = e.channel;
+                    session.dc = dc;
+                    setupDataChannel(session, dc);
+                };
+            }
+        }
+
+        function setupDataChannel(session, dc) {
+            dc.binaryType = 'arraybuffer';
+            
+            dc.onopen = () => {
+                console.log("WebRTC DataChannel mở!");
+                if (session.role === 'sender') {
+                    session.status = 'uploading';
+                    updateP2pSessionUI(session, 'uploading', 'Đang truyền trực tiếp...');
+                    startP2pStream(session);
+                }
+            };
+            
+            dc.onclose = () => {
+                console.log("WebRTC DataChannel đóng!");
+                if (session.role === 'receiver') {
+                    if (session.receivedBytes === session.size) {
+                        finalizeP2pReceive(session);
+                    } else if (session.status !== 'completed' && session.status !== 'failed') {
+                        handleP2pFailure(session, 'Kết nối bị ngắt quãng');
                     }
-                } catch (error) {
-                    fileProgressFill.style.width = '100%';
-                    fileProgressStatus.textContent = 'Lỗi: ' + error.message;
-                    fileProgressDiv.classList.add('error');
+                }
+            };
+            
+            dc.onerror = (err) => {
+                console.error("WebRTC DataChannel lỗi:", err);
+                handleP2pFailure(session, 'Lỗi truyền tải dữ liệu');
+            };
+            
+            if (session.role === 'receiver') {
+                dc.onmessage = (e) => {
+                    handleIncomingChunk(session, e.data);
+                };
+            }
+        }
+
+        const CHUNK_SIZE_P2P = 64 * 1024; // 64KB kích thước tối ưu cho WebRTC
+
+        function startP2pStream(session) {
+            session.offset = 0;
+            // Ngưỡng báo cạn buffer là 1MB
+            session.dc.bufferedAmountLowThreshold = 1024 * 1024;
+            
+            session.dc.onbufferedamountlow = () => {
+                sendP2pChunks(session);
+            };
+            
+            sendP2pChunks(session);
+        }
+
+        async function sendP2pChunks(session) {
+            if (session.aborted || session.status !== 'uploading') return;
+            
+            const file = session.file;
+            const dc = session.dc;
+            
+            while (session.offset < file.size) {
+                // Nếu buffer của trình duyệt tích tụ quá 16MB, tạm dừng và đợi sự kiện onbufferedamountlow
+                if (dc.bufferedAmount >= 16 * 1024 * 1024) {
+                    return;
                 }
                 
-                completedFiles++;
-                const progress = (completedFiles / totalFiles) * 100;
-                overallProgressBar.style.width = progress + '%';
-                overallProgressText.textContent = Math.round(progress) + '%';
+                const end = Math.min(session.offset + CHUNK_SIZE_P2P, file.size);
+                const chunk = file.slice(session.offset, end);
+                
+                try {
+                    const arrayBuffer = await chunk.arrayBuffer();
+                    dc.send(arrayBuffer);
+                    
+                    session.offset += chunk.size;
+                    session.sentBytes = session.offset;
+                    updateP2pProgressUI(session);
+                } catch(err) {
+                    console.error(err);
+                    handleP2pFailure(session, 'Lỗi đọc file: ' + err.message);
+                    return;
+                }
             }
             
-            // Hiển thị kết quả tổng thể
-            if (completedFiles === totalFiles) {
-                statusDiv.textContent = `Đã hoàn thành tải lên ${completedFiles}/${totalFiles} file`;
-                statusDiv.className = 'success';
-                statusDiv.style.display = 'block';
+            if (session.offset === file.size) {
+                session.status = 'completed';
+                updateP2pSessionUI(session, 'completed', 'Hoàn thành!');
                 
-                // Reload trang sau 2 giây để cập nhật danh sách file
-                setTimeout(() => location.reload(), 2000);
+                setTimeout(() => {
+                    try { dc.close(); } catch(e){}
+                    try { session.pc.close(); } catch(e){}
+                }, 1500);
             }
-        };
+        }
+
+        function handleIncomingChunk(session, arrayBuffer) {
+            if (session.aborted || session.status === 'failed') return;
+            
+            session.receivedChunks.push(arrayBuffer);
+            session.receivedBytes += arrayBuffer.byteLength;
+            updateP2pProgressUI(session);
+            
+            if (session.receivedBytes === session.size) {
+                finalizeP2pReceive(session);
+            }
+        }
+
+        function finalizeP2pReceive(session) {
+            session.status = 'completed';
+            updateP2pSessionUI(session, 'completed', 'Hoàn thành!');
+            
+            try {
+                const blob = new Blob(session.receivedChunks);
+                const url = URL.createObjectURL(blob);
+                downloadFile(url, session.filename);
+                
+                setTimeout(() => URL.revokeObjectURL(url), 5000);
+            } catch(e) {
+                handleP2pFailure(session, 'Lỗi ghi file vào thiết bị');
+            }
+            
+            setTimeout(() => {
+                try { session.dc.close(); } catch(e){}
+                try { session.pc.close(); } catch(e){}
+            }, 1000);
+        }
+
+        function handleP2pFailure(session, errorMsg) {
+            if (session.status === 'completed' || session.status === 'failed') return;
+            session.status = 'failed';
+            updateP2pSessionUI(session, 'failed', errorMsg);
+            
+            try { session.dc.close(); } catch(e){}
+            try { session.pc.close(); } catch(e){}
+        }
+
+        async function cancelP2pUpload(id) {
+            const session = p2pSessions[id];
+            if (!session) return;
+            
+            session.aborted = true;
+            
+            // Gửi tin nhắn hủy qua signaling
+            sendSignal(session.targetId, {
+                type: 'webrtc-cancel',
+                upload_id: session.id
+            });
+            
+            handleP2pFailure(session, 'Đã hủy');
+            
+            const card = document.getElementById(`p2p-card-${session.id}`);
+            if (card) {
+                card.style.opacity = '0';
+                card.style.transform = 'scale(0.9)';
+                setTimeout(() => { card.remove(); checkP2pQueueEmpty(); }, 300);
+            }
+            delete p2pSessions[id];
+        }
+
+        function updateP2pProgressUI(session) {
+            const bytes = session.role === 'sender' ? session.sentBytes : session.receivedBytes;
+            const percent = Math.min((bytes / session.size) * 100, 100);
+            
+            const fill = document.getElementById(`p2p-fill-${session.id}`);
+            const text = document.getElementById(`p2p-percent-${session.id}`);
+            
+            if (fill) fill.style.width = percent.toFixed(1) + '%';
+            if (text) text.textContent = percent.toFixed(1) + '%';
+        }
+
+        function updateP2pSessionUI(session, status, text) {
+            const card = document.getElementById(`p2p-card-${session.id}`);
+            if (!card) return;
+            
+            const statusBadge = document.getElementById(`p2p-status-${session.id}`);
+            if (statusBadge) {
+                statusBadge.textContent = text;
+                statusBadge.className = 'status-badge';
+                statusBadge.classList.add(`status-${status}`);
+            }
+            
+            if (status === 'completed') {
+                const fill = document.getElementById(`p2p-fill-${session.id}`);
+                const percentText = document.getElementById(`p2p-percent-${session.id}`);
+                const speed = document.getElementById(`p2p-speed-${session.id}`);
+                const eta = document.getElementById(`p2p-eta-${session.id}`);
+                
+                if (fill) { fill.style.width = '100%'; fill.classList.add('progress-completed'); }
+                if (percentText) { percentText.textContent = '100%'; percentText.classList.add('completed'); }
+                if (speed) speed.textContent = '';
+                if (eta) eta.textContent = '';
+                
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.9)';
+                    setTimeout(() => { card.remove(); checkP2pQueueEmpty(); }, 300);
+                }, 5000);
+            }
+        }
+
+        function checkP2pQueueEmpty() {
+            const container = document.getElementById('p2pQueueContainer');
+            const wrapper = document.getElementById('p2pQueueWrapper');
+            if (container.children.length === 0) wrapper.style.display = 'none';
+        }
+
+        // --- SIGNALING & ONLINE DEVICES BOT LOOP ---
+
+        async function runHeartbeat() {
+            try {
+                await fetch('/api/webrtc/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        device_id: MY_DEVICE_ID,
+                        name: MY_DEVICE_NAME
+                    })
+                });
+                
+                refreshLanDevices();
+            } catch(e) {
+                console.error("Heartbeat error:", e);
+            }
+        }
+
+        async function refreshLanDevices() {
+            try {
+                const response = await fetch(`/api/webrtc/devices?exclude_id=${MY_DEVICE_ID}`);
+                const devices = await response.json();
+                
+                const list = document.getElementById('devicesList');
+                if (devices.length === 0) {
+                    list.innerHTML = '<div class="empty-list">Chưa phát hiện thiết bị khác đang hoạt động trong mạng LAN</div>';
+                    return;
+                }
+                
+                list.innerHTML = '';
+                devices.forEach(dev => {
+                    const card = document.createElement('div');
+                    card.className = 'device-card';
+                    card.innerHTML = `
+                        <div class="device-info">
+                            <div class="device-avatar">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                            </div>
+                            <div class="device-details">
+                                <span class="dev-name" title="${dev.name}">${dev.name}</span>
+                                <span class="dev-ip">${dev.ip}</span>
+                            </div>
+                        </div>
+                        <button class="btn-send-p2p" onclick="chooseP2pFile('${dev.id}', '${dev.name.replace(/'/g, "\\'")}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                            Gửi tệp P2P
+                        </button>
+                    `;
+                    list.appendChild(card);
+                });
+            } catch(e) {
+                console.error("Refresh devices error:", e);
+            }
+        }
+
+        async function sendSignal(receiverId, data) {
+            try {
+                await fetch('/api/webrtc/signal/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sender_id: MY_DEVICE_ID,
+                        receiver_id: receiverId,
+                        data: data
+                    })
+                });
+            } catch(e) {
+                console.error(e);
+            }
+        }
+
+        async function pollSignals() {
+            try {
+                const response = await fetch('/api/webrtc/signal/receive', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ device_id: MY_DEVICE_ID })
+                });
+                
+                const mailbox = await response.json();
+                for (const msg of mailbox) {
+                    await handleSignalMessage(msg.sender_id, msg.data);
+                }
+            } catch(e) {
+                console.error("Poll signaling messages error:", e);
+            }
+            
+            // Lặp lại sau 1s
+            setTimeout(pollSignals, 1000);
+        }
+
+        async function handleSignalMessage(senderId, data) {
+            const uploadId = data.upload_id;
+            
+            switch(data.type) {
+                case 'file-meta':
+                    // Hiển thị yêu cầu xác nhận nhận file
+                    showP2pConfirm(senderId, data.sender_name, data.name, data.size, uploadId);
+                    break;
+                    
+                case 'file-decline':
+                    const rSession = p2pSessions[uploadId];
+                    if (rSession) handleP2pFailure(rSession, 'Người nhận từ chối tệp');
+                    break;
+                    
+                case 'file-accept':
+                    const aSession = p2pSessions[uploadId];
+                    if (aSession) {
+                        aSession.status = 'connecting';
+                        updateP2pSessionUI(aSession, 'connecting', 'Đang kết nối...');
+                        initWebRtcConnection(aSession);
+                    }
+                    break;
+                    
+                case 'webrtc-offer':
+                    const rxSession = p2pSessions[uploadId];
+                    if (rxSession && rxSession.pc) {
+                        try {
+                            await rxSession.pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+                            const answer = await rxSession.pc.createAnswer();
+                            await rxSession.pc.setLocalDescription(answer);
+                            
+                            sendSignal(senderId, {
+                                type: 'webrtc-answer',
+                                upload_id: uploadId,
+                                answer: answer
+                            });
+                        } catch(e) {
+                            handleP2pFailure(rxSession, 'Không thể thiết lập cấu hình P2P');
+                        }
+                    }
+                    break;
+                    
+                case 'webrtc-answer':
+                    const txSession = p2pSessions[uploadId];
+                    if (txSession && txSession.pc) {
+                        try {
+                            await txSession.pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+                        } catch(e) {
+                            handleP2pFailure(txSession, 'Cấu hình P2P phản hồi thất bại');
+                        }
+                    }
+                    break;
+                    
+                case 'ice-candidate':
+                    const iceSession = p2pSessions[uploadId];
+                    if (iceSession && iceSession.pc) {
+                        try {
+                            await iceSession.pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+                        } catch(e) {
+                            console.warn("Lỗi add candidate:", e);
+                        }
+                    }
+                    break;
+                    
+                case 'webrtc-cancel':
+                    const cancelSession = p2pSessions[uploadId];
+                    if (cancelSession) {
+                        handleP2pFailure(cancelSession, 'Đối phương đã đóng kết nối');
+                    }
+                    break;
+            }
+        }
+
+        // --- HÀM ĐO ĐẠC TỐC ĐỘ (SPEED) & ETA ---
+
+        // Timer 1s cho Server Upload
+        setInterval(() => {
+            for (const id in uploadSessions) {
+                const session = uploadSessions[id];
+                if (session.status !== 'uploading') continue;
+                
+                const loaded = getUploadedBytes(session);
+                const delta = loaded - session.lastLoadedBytes;
+                session.speed = delta;
+                session.lastLoadedBytes = loaded;
+                
+                const remaining = session.file.size - loaded;
+                session.eta = session.speed > 0 ? remaining / session.speed : null;
+                
+                const speedEl = document.getElementById(`speed-${session.id}`);
+                const etaEl = document.getElementById(`eta-${session.id}`);
+                
+                if (speedEl) speedEl.textContent = formatSpeed(session.speed);
+                if (etaEl) etaEl.textContent = session.eta !== null ? formatTime(session.eta) + ' còn lại' : '';
+            }
+        }, 1000);
+
+        // Timer 1s cho P2P Transfer
+        setInterval(() => {
+            for (const id in p2pSessions) {
+                const session = p2pSessions[id];
+                if (session.status !== 'uploading') continue;
+                
+                const current = session.role === 'sender' ? session.sentBytes : session.receivedBytes;
+                const last = session.role === 'sender' ? session.lastSentBytes : session.lastReceivedBytes;
+                
+                const delta = current - last;
+                session.speed = delta;
+                
+                if (session.role === 'sender') session.lastSentBytes = current;
+                else session.lastReceivedBytes = current;
+                
+                const remaining = session.size - current;
+                session.eta = session.speed > 0 ? remaining / session.speed : null;
+                
+                const speedEl = document.getElementById(`p2p-speed-${session.id}`);
+                const etaEl = document.getElementById(`p2p-eta-${session.id}`);
+                
+                if (speedEl) speedEl.textContent = formatSpeed(session.speed);
+                if (etaEl) etaEl.textContent = session.eta !== null ? formatTime(session.eta) + ' còn lại' : '';
+            }
+        }, 1000);
+
+        // --- ĐỒNG BỘ DỮ LIỆU ĐỘNG ---
 
         function downloadFile(url, filename) {
             const link = document.createElement('a');
@@ -341,53 +2114,90 @@
             document.body.removeChild(link);
         }
 
-        function clearFiles() {
-            document.getElementById('file').value = '';
-            document.getElementById('fileCount').textContent = '';
-            document.getElementById('progressSection').style.display = 'none';
-            document.getElementById('status').style.display = 'none';
-        }
-
-        function updateFileCount() {
-            const fileInput = document.getElementById('file');
-            const fileCount = document.getElementById('fileCount');
-            const files = fileInput.files;
+        async function loadUploadedFiles() {
+            const btn = document.getElementById('refreshUploadedBtn');
+            btn.style.pointerEvents = 'none'; btn.style.opacity = '0.5';
             
-            if (files.length > 0) {
-                let totalSize = 0;
-                for (let file of files) {
-                    totalSize += file.size;
+            try {
+                const response = await fetch('/api/uploaded');
+                const files = await response.json();
+                const list = document.getElementById('uploadedFilesList');
+                
+                if (files.length === 0) {
+                    list.innerHTML = '<div class="empty-list">Chưa có file nào được tải lên</div>';
+                    return;
                 }
-                const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2);
-                fileCount.textContent = `Đã chọn ${files.length} file (${totalSizeMB} MB)`;
-            } else {
-                fileCount.textContent = '';
+                
+                list.innerHTML = '';
+                files.forEach(file => {
+                    const div = document.createElement('div');
+                    div.className = 'file-item';
+                    div.innerHTML = `
+                        <div class="file-item-info">
+                            <svg class="file-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <div class="file-item-details">
+                                <a href="/uploads/${encodeURIComponent(file.name)}" target="_blank" class="file-name" title="${file.name}">${file.name}</a>
+                                <span class="file-size">${file.size_formatted}</span>
+                            </div>
+                        </div>
+                        <button class="btn-download" onclick="downloadFile('/uploads/${encodeURIComponent(file.name)}', '${file.name.replace(/'/g, "\\'")}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Tải xuống
+                        </button>
+                    `;
+                    list.appendChild(div);
+                });
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setTimeout(() => { btn.style.pointerEvents = 'auto'; btn.style.opacity = '1'; }, 400);
             }
         }
 
-        // Cập nhật số lượng file khi chọn file
-        document.getElementById('file').addEventListener('change', updateFileCount);
-
         async function loadSharedFiles() {
+            const btn = document.getElementById('refreshSharedBtn');
+            btn.style.pointerEvents = 'none'; btn.style.opacity = '0.5';
+            
             try {
                 const response = await fetch('/api/files');
                 const files = await response.json();
+                const list = document.getElementById('sharedFilesList');
                 
-                const fileList = document.getElementById('sharedFilesList');
-                fileList.innerHTML = '';
+                if (files.length === 0) {
+                    list.innerHTML = '<div class="empty-list">Chưa có file nào trong thư mục shared_files</div>';
+                    return;
+                }
                 
+                list.innerHTML = '';
                 files.forEach(file => {
-                    const li = document.createElement('li');
-                    li.innerHTML = `
-                        <span>${file.name} <span class="file-size">(${file.size_mb} MB)</span></span>
-                        <button class="download-btn" onclick="downloadFile('/shared/${file.name}', '${file.name}')">📥 Tải xuống</button>
+                    const div = document.createElement('div');
+                    div.className = 'file-item';
+                    div.innerHTML = `
+                        <div class="file-item-info">
+                            <svg class="file-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                            <div class="file-item-details">
+                                <span class="file-name" title="${file.name}">${file.name}</span>
+                                <span class="file-size">${file.size_formatted}</span>
+                            </div>
+                        </div>
+                        <button class="btn-download" onclick="downloadFile('/shared/${encodeURIComponent(file.name)}', '${file.name.replace(/'/g, "\\'")}')">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Tải xuống
+                        </button>
                     `;
-                    fileList.appendChild(li);
+                    list.appendChild(div);
                 });
-            } catch (error) {
-                console.error('Lỗi khi tải danh sách file:', error);
+            } catch(e) {
+                console.error(e);
+            } finally {
+                setTimeout(() => { btn.style.pointerEvents = 'auto'; btn.style.opacity = '1'; }, 400);
             }
         }
+
+        // --- KHỞI CHẠY HỆ THỐNG ---
+        runHeartbeat();
+        setInterval(runHeartbeat, 5000); // 5s một lần cập nhật trạng thái thiết bị online
+        pollSignals();                   // Bắt đầu vòng lặp poll signaling tin nhắn nhận được
     </script>
 </body>
-</html> 
+</html>
