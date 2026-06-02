@@ -1673,21 +1673,6 @@
                         type: 'webrtc-offer',
                         upload_id: session.id,
                         offer: offer
-                    });
-                    updateP2pSessionUI(session, 'connecting', 'Đang thiết lập kết nối...');
-                } catch(err) {
-                    handleP2pFailure(session, 'Lỗi tạo Offer: ' + err.message);
-                }
-            } else {
-                // Ở phía người nhận, lắng nghe kênh DataChannel từ sender
-                pc.ondatachannel = (e) => {
-                    const dc = e.channel;
-                    session.dc = dc;
-                    setupDataChannel(session, dc);
-                };
-            }
-        }
-
         function setupDataChannel(session, dc) {
             dc.binaryType = 'arraybuffer';
             
@@ -1724,12 +1709,17 @@
         }
 
         const CHUNK_SIZE_P2P = 64 * 1024; // 64KB kích thước tối ưu cho WebRTC
+        const BLOCK_SIZE_P2P = 4 * 1024 * 1024; // Đọc khối 4MB vào RAM mỗi lần để tránh nghẽn I/O
 
         function startP2pStream(session) {
             session.offset = 0;
             // Ngưỡng báo cạn buffer là 512KB để kích hoạt tiếp dữ liệu kịp thời
             session.dc.bufferedAmountLowThreshold = 512 * 1024;
             session.isSending = false;
+            
+            // Khởi tạo các biến đệm khối RAM
+            session.currentBlock = null;
+            session.currentBlockOffset = 0;
             
             session.dc.onbufferedamountlow = () => {
                 sendP2pChunks(session);
@@ -1741,7 +1731,7 @@
         async function sendP2pChunks(session) {
             if (session.aborted || session.status !== 'uploading') return;
             
-            // Khóa chống việc gọi đệ quy lồng nhau khi sự kiện onbufferedamountlow kích hoạt liên tiếp
+            // Khóa chống việc gọi song song lặp lại khi sự kiện onbufferedamountlow kích hoạt liên tiếp
             if (session.isSending) return;
             session.isSending = true;
             
@@ -1750,28 +1740,51 @@
             
             try {
                 while (session.offset < file.size) {
-                    // Giới hạn đệm an toàn là 2MB (tránh vượt ngưỡng 16MB của Chrome gây crash)
+                    // Kiểm tra giới hạn đệm WebRTC DataChannel (tránh vượt 16MB gây crash)
                     if (dc.bufferedAmount >= 2 * 1024 * 1024) {
                         session.isSending = false;
                         return;
                     }
                     
-                    const end = Math.min(session.offset + CHUNK_SIZE_P2P, file.size);
-                    const chunk = file.slice(session.offset, end);
-                    
-                    const arrayBuffer = await chunk.arrayBuffer();
-                    
-                    // Kiểm tra xem tiến trình có bị hủy trong quá trình đọc file bất đồng bộ không
-                    if (session.aborted || session.status !== 'uploading') {
-                        session.isSending = false;
-                        return;
+                    // 1. Nếu chưa nạp block dữ liệu nào vào RAM, tiến hành đọc 4MB từ file
+                    if (!session.currentBlock || session.currentBlockOffset >= session.currentBlock.byteLength) {
+                        const start = session.offset;
+                        const end = Math.min(start + BLOCK_SIZE_P2P, file.size);
+                        
+                        if (start >= file.size) break;
+                        
+                        const fileSlice = file.slice(start, end);
+                        session.currentBlock = await fileSlice.arrayBuffer();
+                        session.currentBlockOffset = 0;
+                        
+                        // Kiểm tra lại nếu tiến trình bị dừng trong lúc chờ đọc file từ ổ cứng
+                        if (session.aborted || session.status !== 'uploading') {
+                            session.isSending = false;
+                            return;
+                        }
                     }
                     
-                    dc.send(arrayBuffer);
+                    // 2. Cắt nhỏ và gửi đồng bộ cực nhanh các chunk 64KB trực tiếp từ RAM
+                    const block = session.currentBlock;
+                    while (session.currentBlockOffset < block.byteLength) {
+                        if (dc.bufferedAmount >= 2 * 1024 * 1024) {
+                            session.isSending = false;
+                            return;
+                        }
+                        
+                        const chunkLength = Math.min(CHUNK_SIZE_P2P, block.byteLength - session.currentBlockOffset);
+                        const chunkBuffer = block.slice(session.currentBlockOffset, session.currentBlockOffset + chunkLength);
+                        
+                        dc.send(chunkBuffer);
+                        
+                        session.currentBlockOffset += chunkLength;
+                        session.offset += chunkLength;
+                        session.sentBytes = session.offset;
+                        updateP2pProgressUI(session);
+                    }
                     
-                    session.offset += chunk.size;
-                    session.sentBytes = session.offset;
-                    updateP2pProgressUI(session);
+                    // Giải phóng bộ nhớ của block cũ sau khi gửi xong
+                    session.currentBlock = null;
                 }
                 
                 if (session.offset === file.size) {
