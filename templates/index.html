@@ -1727,8 +1727,9 @@
 
         function startP2pStream(session) {
             session.offset = 0;
-            // Ngưỡng báo cạn buffer là 1MB
-            session.dc.bufferedAmountLowThreshold = 1024 * 1024;
+            // Ngưỡng báo cạn buffer là 512KB để kích hoạt tiếp dữ liệu kịp thời
+            session.dc.bufferedAmountLowThreshold = 512 * 1024;
+            session.isSending = false;
             
             session.dc.onbufferedamountlow = () => {
                 sendP2pChunks(session);
@@ -1740,40 +1741,53 @@
         async function sendP2pChunks(session) {
             if (session.aborted || session.status !== 'uploading') return;
             
+            // Khóa chống việc gọi đệ quy lồng nhau khi sự kiện onbufferedamountlow kích hoạt liên tiếp
+            if (session.isSending) return;
+            session.isSending = true;
+            
             const file = session.file;
             const dc = session.dc;
             
-            while (session.offset < file.size) {
-                // Nếu buffer của trình duyệt tích tụ quá 16MB, tạm dừng và đợi sự kiện onbufferedamountlow
-                if (dc.bufferedAmount >= 16 * 1024 * 1024) {
-                    return;
-                }
-                
-                const end = Math.min(session.offset + CHUNK_SIZE_P2P, file.size);
-                const chunk = file.slice(session.offset, end);
-                
-                try {
+            try {
+                while (session.offset < file.size) {
+                    // Giới hạn đệm an toàn là 2MB (tránh vượt ngưỡng 16MB của Chrome gây crash)
+                    if (dc.bufferedAmount >= 2 * 1024 * 1024) {
+                        session.isSending = false;
+                        return;
+                    }
+                    
+                    const end = Math.min(session.offset + CHUNK_SIZE_P2P, file.size);
+                    const chunk = file.slice(session.offset, end);
+                    
                     const arrayBuffer = await chunk.arrayBuffer();
+                    
+                    // Kiểm tra xem tiến trình có bị hủy trong quá trình đọc file bất đồng bộ không
+                    if (session.aborted || session.status !== 'uploading') {
+                        session.isSending = false;
+                        return;
+                    }
+                    
                     dc.send(arrayBuffer);
                     
                     session.offset += chunk.size;
                     session.sentBytes = session.offset;
                     updateP2pProgressUI(session);
-                } catch(err) {
-                    console.error(err);
-                    handleP2pFailure(session, 'Lỗi đọc file: ' + err.message);
-                    return;
                 }
-            }
-            
-            if (session.offset === file.size) {
-                session.status = 'completed';
-                updateP2pSessionUI(session, 'completed', 'Hoàn thành!');
                 
-                setTimeout(() => {
-                    try { dc.close(); } catch(e){}
-                    try { session.pc.close(); } catch(e){}
-                }, 1500);
+                if (session.offset === file.size) {
+                    session.status = 'completed';
+                    updateP2pSessionUI(session, 'completed', 'Hoàn thành!');
+                    
+                    setTimeout(() => {
+                        try { dc.close(); } catch(e){}
+                        try { session.pc.close(); } catch(e){}
+                    }, 1500);
+                }
+            } catch(err) {
+                console.error("Lỗi trong quá trình gửi chunk P2P:", err);
+                handleP2pFailure(session, 'Lỗi gửi dữ liệu: ' + err.message);
+            } finally {
+                session.isSending = false;
             }
         }
 
